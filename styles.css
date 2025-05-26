@@ -5,6 +5,7 @@ html {
 }
 body {
     font-family: "Roboto", "HelveticaNeue", Helvetica, Arial, sans-serif;
+    font-size: 1.5em;
     font-weight: 400;
     line-height: 1.6;
     color: #FFFFFF;
@@ -42,6 +43,17 @@ h5 { font-size: 1.5rem; line-height: 1.6;  letter-spacing: 0; }
 h6 { font-size: 1.4rem; line-height: 1.6;  letter-spacing: 0; }
 
 /**
+ * Paragraphs
+ */
+ p {
+    margin: 0 auto 1.5em auto; /* bottom margin for paragraphs */
+  }
+  p + p {
+  
+  }
+
+
+/**
  * Quotes & Blockquotes
  */
  q {
@@ -64,6 +76,29 @@ h6 { font-size: 1.4rem; line-height: 1.6;  letter-spacing: 0; }
   blockquote p:last-child {
     margin-bottom: 0;  
   }
+
+/**
+ * Layout styles
+ */
+
+/* Full size background image */
+html, #container, .inner { background-color:transparent;}
+html {
+  background:url(background.jpg) center center no-repeat fixed;
+  background-size:cover;
+}
+body {
+  max-width:800px;
+  margin:25px auto;
+}
+header, #content, footer { 
+  background: rgba(0,0,0,.8); 
+  padding:25px;
+  color:#FFFFFF; 
+}
+iframe {
+  max-width:100%;
+
 
 /* Menu Links */
 ul.main-menu {
