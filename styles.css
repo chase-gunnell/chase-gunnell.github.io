@@ -45,13 +45,9 @@ h6 { font-size: 1.4rem; line-height: 1.6;  letter-spacing: 0; }
 /**
  * Paragraphs
  */
- p {
+p {
     margin: 0 auto 1.5em auto; /* bottom margin for paragraphs */
-  }
-  p + p {
-  
-  }
-
+}
 
 /**
  * Quotes & Blockquotes
@@ -98,7 +94,7 @@ header, #content, footer {
 }
 iframe {
   max-width:100%;
-
+}
 
 /* Menu Links */
 ul.main-menu {
