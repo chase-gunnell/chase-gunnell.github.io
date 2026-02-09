@@ -1,0 +1,304 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/chase/Documents/Deutschland/Umwelt/Haushaltsabfaelle")
+
+# Import libraries
+library(tidyverse)
+library(sf)
+library(ggtext)
+library(leaflet)
+library(leafpop)
+library(leaflegend)
+library(htmlwidgets)
+library(htmltools)
+```
+
+
+```{r, include=FALSE}
+# Reading in annual household waste data 2008—2023 downloaded from Regionalatlas Deutschland
+# Renaming columns to facilitate data manipulation
+d23 <- st_read("2023/R-2023-AI019--AI1901--2025-12-31.shp") %>% 
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>% 
+  mutate(area = st_area(.)) %>% 
+  select(-starts_with("Shape"))
+d22 <- st_read("2022/R-2022-AI019--AI1901--2025-12-31.shp") %>% 
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>% 
+  mutate(area = st_area(.)) %>% 
+  select(-starts_with("Shape"))
+d21 <- st_read("2021/R-2021-AI019--AI1901--2025-12-31.shp") %>% 
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>% 
+  mutate(area = st_area(.)) %>% 
+  select(-starts_with("Shape"))
+d20 <- st_read("2020/R-2020-AI019--AI1901--2025-12-31.shp") %>%
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d19 <- st_read("2019/R-2019-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d18 <- st_read("2018/R-2018-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d17 <- st_read("2017/R-2017-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d16 <- st_read("2016/R-2016-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d15 <- st_read("2015/R-2015-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d14 <- st_read("2014/R-2014-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d13 <- st_read("2013/R-2013-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d12 <- st_read("2012/R-2012-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d11 <- st_read("2011/R-2011-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d10 <- st_read("2010/R-2010-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d09 <- st_read("2009/R-2009-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+d08 <- st_read("2008/R-2008-AI019--AI1901--2025-12-31.shp") %>%    
+  rename(key = schluessel, kg_jeEW = starts_with("ai")) %>%    
+  mutate(area = st_area(.)) %>%    
+  select(-starts_with("Shape"))
+
+# Putting all of the dataframes into a list
+dl <- list(d08, d09, d10, d11, d12, d13, d14, d15, 
+           d16, d17, d18, d19, d20, d21, d22, d23)
+
+# Merging into one large dataframe
+df <- bind_rows(dl)
+```
+
+```{r, include=FALSE}
+# Data for the entirety of Germany copied from Statistisches Bundesamt (Destatis)
+de <- data.frame(gen = "Deutschland",
+                 jahr = 2008:2023,
+                 kg_jeEW = c(448, 455, 450, 463, 456, 453, 462, 455,
+                             462, 462, 455, 457, 476, 484, 438, 433))
+
+# Creating a seperate dataframe that includes the nationwide data
+df_de <- df %>% bind_rows(de)
+
+# Getting the 15-year average for Germany
+de_avg <- round(mean(de$kg_jeEW), 1)
+
+# Getting 15-year averages for the regions
+df_avg <- df %>% 
+  group_by(gen) %>% 
+  summarise(avg = round(mean(kg_jeEW), 1), per_dev = round(((avg - de_avg)/de_avg) * 100, 1))
+
+# Dropping geometry for easier handling
+df_avg_nosf <- df_avg %>% st_drop_geometry()
+```
+
+
+```{r, include=FALSE}
+# Creating a list of plots for use in the map
+plots <- map(sort(unique(df$gen)), ~ {
+  ggplot(filter(df_de, gen == .x | gen == "Deutschland") %>%
+           mutate(gen = factor(gen, levels = c("Deutschland", .x))), 
+    aes(x = jahr, y = kg_jeEW, color = gen, fill = gen)) +
+    geom_line(linewidth = 0.75) +
+    geom_point(color = "white", shape = 21, size = 2.25) +
+    #stat_smooth(method = "loess") +
+    labs(
+      title = paste(.x, "household waste"),
+      subtitle = paste0("Average household waste per inhabitant (kg) 
+                  <br>from 2008 to 2023
+                  <br><span style = 'color: blue; font-size:10pt;'>Deviation from national average = ", 
+                  filter(df_avg_nosf, gen == .x)$per_dev, "%</span>"),
+      x = "year",
+      y = "avg household waste \n per inhabitant (kg)"
+      ) +
+    scale_y_continuous(
+      # breaks = scales::breaks_width(5),
+      labels = scales::label_number(suffix = " kg"),
+      sec.axis = dup_axis(
+        breaks = filter(df_de, gen == .x & jahr == 2023 |
+                          gen == "Deutschland" & jahr == 2023)$kg_jeEW,
+        labels = c(ifelse(str_detect(.x, "-"), 
+                          gsub("-", "-\n", .x),
+                          .x),
+                   "Germany"),
+        name = NULL
+      )
+    ) +
+    scale_x_continuous(
+      breaks = scales::breaks_width(3, offset = 1),
+      limits = c(2008, 2023),
+      expand = expansion(mult = c(0.04, 0.005))
+    ) +
+    scale_color_brewer(palette = "Set1",
+                       name = NULL,
+                       direction = -1) +
+    scale_fill_brewer(palette = "Set1",
+                      name = NULL,
+                      direction = -1) +
+    coord_cartesian(clip = "off") +
+    theme_classic() +
+    theme(legend.position = "none",
+          text = element_text(size = 16),
+          plot.title = element_text(size = 16, face = "bold", margin = margin(b = 2)),
+          plot.subtitle = element_markdown(size = 12, colour = "grey20", lineheight = 1.1),
+          axis.title = element_blank(),
+          axis.text.y = element_text(size = 12),
+          axis.text = element_text(color = "black"),
+          axis.line = element_line(color = "black"),
+          axis.line.y.right = element_blank(),
+          axis.ticks.y.right = element_blank(),
+          axis.text.y.right = element_text(
+            margin = margin(0, 0, 0, 2), 
+            color = c("#E41A1CFF", "#377EB8FF")),
+          plot.margin = margin(t = 14, r = 7, b = 16, l = 14),
+          panel.background = element_blank(),
+          panel.grid = element_line(color = "grey90"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank()
+    )
+})
+
+
+```
+
+```{r map, echo=FALSE, out.width = '100%'}
+# Transforming data CRS to WGS84 for leaflet map
+df_sf <- st_transform(df_avg, 4326)
+
+# Domain for palettes
+bounds <- c(-30, 30)
+
+# Palette for the map polygons
+pal_map <- colorNumeric(
+  #palette = c("#A6611A", "#DFC27D", "#F5F5F5", "#80CDC1", "#018571"),
+  palette = "BrBG",
+  domain = bounds,
+  reverse = TRUE
+)
+
+# Palette for the legend
+pal_legend <- colorNumeric(
+  #palette = c("#A6611A", "#DFC27D", "#F5F5F5", "#80CDC1", "#018571"),
+  palette = "BrBG",
+  domain = bounds,
+  reverse = FALSE
+)
+
+# HTML/CSS title for map
+tag.map.title <- tags$style(HTML("
+  .leaflet-control.map-title {
+    left: 8%;
+    top: -70px;
+    text-align: center;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: rgba(255,255,255,0.85);
+    font-weight: bold;
+    font-size: 22px;
+    color: #28282B;
+  }
+"))
+
+# HTML/CSS subtitle for map
+tag.map.subtitle <- tags$style(HTML("
+  .leaflet-control.map-subtitle {
+    left: 8%;
+    top: -72px;
+    width: 400px;
+    text-align: left;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: rgba(225,225,225,0.85);
+    font-weight: normal;
+    font-size: 14px;
+    color: #28282B;
+  }
+"))
+
+# HTML/CSSS info box for map
+tag.map.info <- tags$style(HTML("
+  .leaflet-control.map-info {
+    right: 0;
+    width: 150px;
+    text-align: left;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: rgba(225,225,225,0.85);
+    font-weight: normal;
+    font-size: 12px;
+    color: #28282B;
+    background-color: #FFFFFF;
+  }
+"))
+
+# Title text
+title <- tags$div(
+  tag.map.title, HTML("Household Waste of German Regions 2008–2023")
+)
+
+# Subtitle text
+subtitle <- tags$div(
+  tag.map.subtitle, HTML("Average household waste generated per inhabitant over a 15-year period for German regions,
+                         compared to the 15-year national average")
+)
+
+# Infobox text
+info <- tags$div(
+  tag.map.info, HTML("Positive values indicate that the region has higher trash output than the national average, 
+                     while negative values indicate that the region has lower output")
+)
+
+## Create interactive map
+leaflet(width = "100%", height = 700) %>% 
+  addTiles() %>% 
+  addPolygons(data = df_sf,
+              color = "#444444",
+              weight = 1,
+              smoothFactor = 0.5,
+              opacity = 1.0,
+              fillOpacity = 0.7,
+              fillColor = ~pal_map(df_sf$per_dev),
+              highlightOptions = highlightOptions(
+                color = "white",
+                weight = 2,
+                bringToFront = TRUE
+              ),
+              popup = popupGraph(plots, width = 400)) %>% 
+  addLegend(pal = pal_legend,
+            values = bounds,
+            position = "bottomright",
+            title = "Deviation from<br> National Average (%)",
+            labFormat = labelFormat(transform = function(bounds) sort(bounds, decreasing = TRUE), suffix = "%"),
+            #labFormat = labelFormat(suffix = "%", between = "% &ndash; "),
+            opacity = 1,
+            bins = 5
+            ) %>% 
+  addControl(title, position = "topleft", className = "map-title") %>% 
+  addControl(subtitle, position = "topleft", className = "map-subtitle") %>% 
+  addControl(info, position = "bottomright", className = "map-info")
+
+```
